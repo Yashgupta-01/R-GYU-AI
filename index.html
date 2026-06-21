@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Courtroom Debate Simulator</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-logo">
+        <span class="gavel-icon">⚖️</span>
+        <h1>AI Courtroom Debate Simulator</h1>
+      </div>
+      <div class="header-actions">
+        <button id="btn-toggle-voice" class="btn btn-secondary">
+          <span class="icon">🔊</span> Speech: Off
+        </button>
+        <button id="btn-api-settings" class="btn btn-secondary">
+          <span class="icon">🔑</span> API Key Settings
+        </button>
+        <button id="btn-show-help" class="btn btn-icon" title="How it Works">❓</button>
+      </div>
+    </header>
+
+    <!-- Main Workspace Layout -->
+    <main class="app-body">
+      <!-- Left Sidebar: Configuration & Controls -->
+      <aside class="sidebar config-sidebar">
+        <div class="section-card">
+          <h2><span class="icon">📜</span> Debate Settings</h2>
+          
+          <div class="form-group">
+            <label for="input-topic">Debate Topic</label>
+            <div class="input-with-button">
+              <input type="text" id="input-topic" placeholder="Enter topic (e.g. Universal Basic Income)...">
+              <button id="btn-surprise-topic" class="btn btn-accent" title="Surprise Me">🎲</button>
+            </div>
+            <div id="topic-tags" class="topic-tags-container"></div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="select-rounds">Rounds</label>
+              <select id="select-rounds">
+                <option value="2">2 Rounds</option>
+                <option value="3" selected>3 Rounds</option>
+                <option value="4">4 Rounds</option>
+                <option value="5">5 Rounds</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="select-model">Model</label>
+              <select id="select-model">
+                <option value="gemini-1.5-flash" selected>Gemini 1.5 Flash (Recommended)</option>
+                <option value="gemini-1.5-flash-8b">Gemini 1.5 Flash 8B (Fastest)</option>
+                <option value="gemini-1.5-pro">Gemini 1.5 Pro (Smartest)</option>
+                <option value="gemini-2.0-flash">Gemini 2.0 Flash (Newer)</option>
+                <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <h2><span class="icon">👥</span> The Litigants</h2>
+          
+          <div class="litigant-select-card left-side">
+            <label for="select-persona-left">Plaintiff (Left Podiums)</label>
+            <select id="select-persona-left"></select>
+            <div class="persona-preview" id="preview-left">
+              <p class="persona-desc"></p>
+            </div>
+          </div>
+
+          <div class="litigant-select-card right-side">
+            <label for="select-persona-right">Defendant (Right Podiums)</label>
+            <select id="select-persona-right"></select>
+            <div class="persona-preview" id="preview-right">
+              <p class="persona-desc"></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="action-buttons-group">
+          <button id="btn-start-debate" class="btn btn-primary btn-large">
+            <span class="icon">🏛️</span> Convene Courtroom
+          </button>
+          <button id="btn-reset-debate" class="btn btn-secondary btn-large" disabled>
+            <span class="icon">🔄</span> Reset Court
+          </button>
+        </div>
+      </aside>
+
+      <!-- Center / Right: The Courtroom Arena -->
+      <section class="courtroom-arena">
+        
+        <!-- Scoreboard / Top Overlay Banner -->
+        <div class="courtroom-scoreboard">
+          <div class="score-pill round-counter">
+            <span class="pill-label">ROUND</span>
+            <span id="current-round-number" class="pill-val">0 / 0</span>
+          </div>
+          <div class="score-overview">
+            <div class="side-score left-score">
+              <span class="side-name" id="score-name-left">Plaintiff</span>
+              <div class="score-bar-container">
+                <div class="score-bar" id="bar-left" style="width: 50%;"></div>
+              </div>
+              <span class="score-value" id="val-left">5.0</span>
+            </div>
+            <div class="vs-badge">VS</div>
+            <div class="side-score right-score">
+              <span class="score-value" id="val-right">5.0</span>
+              <div class="score-bar-container">
+                <div class="score-bar" id="bar-right" style="width: 50%;"></div>
+              </div>
+              <span class="side-name" id="score-name-right">Defendant</span>
+            </div>
+          </div>
+          <div class="score-pill judge-status-pill">
+            <span class="pill-label">STATUS</span>
+            <span id="debate-status" class="pill-val idle">Awaiting Counsel</span>
+          </div>
+        </div>
+
+        <!-- The Grand Courtroom Visualizer -->
+        <div class="court-visualizer-container">
+          <div class="courtroom-wood-paneling"></div>
+          <div class="courtroom-stage">
+            <!-- Judge Bench -->
+            <div class="judge-bench-area">
+              <div class="judge-avatar-container state-idle" id="judge-character">
+                <div class="judge-gavel-anim" id="gavel-visual"></div>
+                <!-- SVG Avatar for Judge -->
+                <svg viewBox="0 0 100 100" class="avatar-svg">
+                  <!-- Hair/Wig -->
+                  <path d="M25 45 C25 25, 75 25, 75 45 C75 55, 68 60, 68 65 C68 70, 72 75, 72 78 L28 78 C28 75, 32 70, 32 65 C32 60, 25 55, 25 45 Z" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="1.5"/>
+                  <circle cx="35" cy="45" r="8" fill="#e2e8f0"/>
+                  <circle cx="65" cy="45" r="8" fill="#e2e8f0"/>
+                  <circle cx="30" cy="55" r="9" fill="#e2e8f0"/>
+                  <circle cx="70" cy="55" r="9" fill="#e2e8f0"/>
+                  <!-- Face -->
+                  <circle cx="50" cy="48" r="18" fill="#fbcfe8"/>
+                  <path d="M50 48 M42 45 A1 1 0 1 0 42.1 45 M58 45 A1 1 0 1 0 58.1 45" stroke="#1e293b" stroke-width="3" stroke-linecap="round"/>
+                  <path d="M48 48 Q50 51 52 48" fill="none" stroke="#be185d" stroke-width="2"/>
+                  <!-- Glasses -->
+                  <circle cx="43" cy="45" r="5" fill="none" stroke="#b45309" stroke-width="1.5"/>
+                  <circle cx="57" cy="45" r="5" fill="none" stroke="#b45309" stroke-width="1.5"/>
+                  <line x1="48" y1="45" x2="52" y2="45" stroke="#b45309" stroke-width="1.5"/>
+                  <!-- Robe -->
+                  <path d="M20 90 L80 90 L70 65 L30 65 Z" fill="#1e1b4b"/>
+                  <!-- Collar -->
+                  <path d="M43 65 L50 78 L57 65 Z" fill="#ffffff"/>
+                  <path d="M47 65 L50 82 L53 65 Z" fill="#f43f5e"/>
+                </svg>
+                <div class="name-tag">HONORABLE JUSTICE AI</div>
+              </div>
+              <div class="judge-bench-desk">
+                <div class="wood-carving">⚖️</div>
+              </div>
+            </div>
+
+            <!-- Podiums Area (Left / Right Debaters) -->
+            <div class="podiums-container">
+              <!-- Plaintiff Podiums -->
+              <div class="podium-set left-set">
+                <div class="speech-bubble bubble-left hide" id="bubble-left">
+                  <div class="bubble-scroll" id="text-left"></div>
+                  <div class="whisper-tag hide" id="whisper-left-badge">🤫 Coached</div>
+                </div>
+                
+                <!-- Debater A Avatar -->
+                <div class="debater-character state-listening" id="character-left">
+                  <div class="avatar-glow"></div>
+                  <svg viewBox="0 0 100 100" class="avatar-svg" id="svg-left">
+                    <!-- Base Character Filled Dynamically via JS -->
+                  </svg>
+                  <div class="name-tag" id="tag-left">Plaintiff</div>
+                </div>
+                
+                <div class="podium-desk">
+                  <!-- Coach Injection Drawer -->
+                  <div class="coach-drawer" id="coach-drawer-left">
+                    <button class="btn btn-whisper btn-xs" id="btn-coach-left">
+                      <span>🤫</span> Whisper Instruction
+                    </button>
+                    <div class="whisper-input-container hide" id="container-whisper-left">
+                      <input type="text" id="input-whisper-left" placeholder="e.g. Be more aggressive with costs...">
+                      <button id="btn-send-whisper-left" class="btn btn-accent btn-xs">Send</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Defendant Podiums -->
+              <div class="podium-set right-set">
+                <div class="speech-bubble bubble-right hide" id="bubble-right">
+                  <div class="bubble-scroll" id="text-right"></div>
+                  <div class="whisper-tag hide" id="whisper-right-badge">🤫 Coached</div>
+                </div>
+
+                <!-- Debater B Avatar -->
+                <div class="debater-character state-listening" id="character-right">
+                  <div class="avatar-glow"></div>
+                  <svg viewBox="0 0 100 100" class="avatar-svg" id="svg-right">
+                    <!-- Base Character Filled Dynamically via JS -->
+                  </svg>
+                  <div class="name-tag" id="tag-right">Defendant</div>
+                </div>
+
+                <div class="podium-desk">
+                  <!-- Coach Injection Drawer -->
+                  <div class="coach-drawer" id="coach-drawer-right">
+                    <button class="btn btn-whisper btn-xs" id="btn-coach-right">
+                      <span>🤫</span> Whisper Instruction
+                    </button>
+                    <div class="whisper-input-container hide" id="container-whisper-right">
+                      <input type="text" id="input-whisper-right" placeholder="e.g. Focus on ethical standards...">
+                      <button id="btn-send-whisper-right" class="btn btn-accent btn-xs">Send</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom: Gavel Panel & Quick Logs -->
+          <div class="court-floor">
+            <div class="courtroom-railing"></div>
+          </div>
+        </div>
+
+        <!-- Live transcript, analysis, exports -->
+        <div class="court-records-panel">
+          <div class="tab-header">
+            <button class="tab-btn active" data-tab="tab-transcript">📜 Debate Record</button>
+            <button class="tab-btn" data-tab="tab-fallacies" id="tab-btn-fallacies" disabled>🔍 Fallacy Audit</button>
+            <button class="tab-btn" data-tab="tab-rulings" id="tab-btn-rulings">⚖️ Judicial Opinions</button>
+          </div>
+
+          <div class="tab-content active" id="tab-transcript">
+            <div class="live-feed-strip hide" id="live-feed-strip">
+              <span class="live-dot"></span>
+              <span id="live-feed-label">Plaintiff is arguing...</span>
+            </div>
+            <div class="transcript-scroller" id="transcript-container">
+              <div class="transcript-placeholder">
+                <span class="icon">🏛️</span>
+                <p>The court has not convened. Select characters, set a topic, and press "Convene Courtroom" to begin.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="tab-content" id="tab-fallacies">
+            <div class="fallacy-scroller" id="fallacy-container">
+              <div class="fallacy-placeholder">
+                <p>Please wait for the debate to conclude. The Fallacy Detector audit runs automatically at the end of the session.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="tab-content" id="tab-rulings">
+            <div class="rulings-scroller" id="rulings-container">
+              <div class="rulings-placeholder">
+                <p>Rounds scores and judicial reasoning will appear here as the trial progresses.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Export and Action Panel -->
+          <div class="record-actions hide" id="export-panel">
+            <div class="winner-banner" id="winner-banner">
+              ⚖️ Debate Concluded! Winner: <strong id="winner-text">Plaintiff</strong>
+            </div>
+            <div class="export-buttons">
+              <button id="btn-run-fallacy" class="btn btn-accent">
+                <span class="icon">🔍</span> Run Fallacy Analysis
+              </button>
+              <button id="btn-export-markdown" class="btn btn-secondary">
+                <span class="icon">📥</span> Export Markdown Transcript
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Modal: Settings (API Key) -->
+    <div class="modal-overlay hide" id="modal-settings">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2>Gemini API Credentials</h2>
+          <button class="btn-close-modal" id="btn-close-settings">×</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-desc">
+            This simulator runs directly in your browser. All API requests are sent straight to Google's Gemini endpoint. Your API key is stored safely in your browser's local storage.
+          </p>
+          <div class="form-group">
+            <label for="input-api-key">Gemini API Key</label>
+            <input type="password" id="input-api-key" placeholder="AIzaSy...">
+            <span class="help-text">Don't have a key? Get one from <a href="https://aistudio.google.com/" target="_blank" rel="noopener">Google AI Studio</a>.</span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="btn-save-settings" class="btn btn-primary">Save Changes</button>
+          <button id="btn-cancel-settings" class="btn btn-secondary">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Welcome/Help -->
+    <div class="modal-overlay hide" id="modal-help">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2>AI Courtroom Debate Simulator Guide</h2>
+          <button class="btn-close-modal" id="btn-close-help">×</button>
+        </div>
+        <div class="modal-body scrollable-modal-body">
+          <h3>How it Works</h3>
+          <ol>
+            <li><strong>Provide your Gemini API Key</strong> using the settings button in the top right.</li>
+            <li><strong>Choose a topic</strong> manually or click the dice button 🎲 to pick a random debate topic.</li>
+            <li><strong>Select your Litigants</strong> (the Plaintiff and Defendant archetypes). Each has a unique ideological persona and memory capacity.</li>
+            <li><strong>Convene the courtroom</strong> to start the live debate!</li>
+            <li><strong>Inject Coach Notes:</strong> While a debater is waiting or actively speaking, you can click "Whisper Instruction" to guide their next arguments privately.</li>
+            <li><strong>Judicial Review:</strong> After both sides finish speaking in a round, Justice AI scores the arguments on logic, evidence, and persuasiveness.</li>
+            <li><strong>Audit Fallacies:</strong> Once all rounds finish, run the Fallacy Detector overlay to scan for logic gaps and download the final record.</li>
+          </ol>
+        </div>
+        <div class="modal-footer">
+          <button id="btn-close-help-ok" class="btn btn-primary">Let's Go!</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Scripts -->
+  <script src="js/personas.js"></script>
+  <script src="js/topic-gen.js"></script>
+  <script src="js/judge.js"></script>
+  <script src="js/fallacy.js"></script>
+  <script src="js/transcript.js"></script>
+  <script src="js/debate-engine.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
